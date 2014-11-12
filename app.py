@@ -109,8 +109,6 @@ def Variants(dataset_name, variant_set_id, ref):
         raise Exception("Multiple databases with the same name not supported yet.")
     variantSets = submit(genomics.variantsets().search(body={"datasetIds":[dataset_id]}))
     variantSets = variantSets["variantSets"]
-    breadcrumbs = OrderedDict([("Project", url_for('Project')),
-                            (dataset_name, url_for('Dataset', dataset_name=dataset_name))])
     variants = submit(genomics.variants().search(body={"referenceName":ref, "variantSetIds":[variant_set_id]}))
     # Reorganize Callsets
     if "variants" in variants:
@@ -124,7 +122,10 @@ def Variants(dataset_name, variant_set_id, ref):
                 gt_map[0] = v["referenceBases"]
                 variants["variants"][k]["gt"][sample_name] = c["genotype"]
         sample_set = sorted(sample_set)
-
+    breadcrumbs = OrderedDict([("Project", url_for('Project')),
+                        (dataset_name, url_for('Dataset', dataset_name=dataset_name)),
+                        ("variantSet","active"),
+                        (ref, "active")])
     return render_template('variant.html', **locals())
 
 @app.route("/<chrom>/<start>/<end>/")

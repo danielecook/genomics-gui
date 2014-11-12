@@ -2,6 +2,11 @@
 __pycache__/
 *.py[cod]
 
+# google cloud
+client_secrets.json
+credentials.dat
+config.yaml
+
 # C extensions
 *.so
 
