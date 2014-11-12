@@ -1,0 +1,28 @@
+{% extends "index.html" %}
+{% block view %}
+<div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>id</th>
+                  <th>Public</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for dataset in datasets %}
+                <tr>
+                  <td><a href="{{ url_for('Dataset', dataset_name=dataset.name) }}">{{ dataset.name }}</a></td>
+                  <td><a href="{{ url_for('Dataset', dataset_name=dataset.name) }}">{{ dataset.id }}</a></td>
+                  <td>{% if dataset.isPublic == True %}
+                  <i class="glyphicon glyphicon-ok"></i>
+                  {% else %}
+                  <i class="glyphicon glyphicon-remove"></i>
+                  {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+
+{% endblock %}

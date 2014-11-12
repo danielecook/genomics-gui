@@ -1,0 +1,42 @@
+{% extends "index.html" %}
+{% block view %}
+<div class="table-responsive">
+<h2>Variants</h2>
+  <table class="table table-striped">
+    <thead>
+    <th>CHROM</th>
+    <th>POS</th>
+    <th>ID <small>(Name)</small></th>
+    <th>REF</th>
+    <th>ALT</th>
+    <th>QUAL</th>
+    <th>FILTER</th>
+    <th>GT</th>
+    </thead>
+    <tbody>
+
+    {% for var in variants["variants"] %}
+      <tr>
+        <td>{{ var.referenceName }}</td>
+        <td>{{ var.start }}</td>
+        <td>{{ var.name }}</td>
+        <td>{{ var.referenceBases }}</td>
+        <td>
+        {% for i in var.alternateBases %}
+          {{ i }} 
+        {% endfor %}
+        </td>
+        <td>{{ var.quality }}</td>
+        <td>
+          {% for i in var.filter %}
+            {{ i }} 
+          {% endfor %}
+        </td>
+        <td style="white-space: nowrap;">{% for sample in sample_set %}{% if var.gt[sample] == [0,0] %}<div class="hom_ref gt "></div>{% elif var.gt[sample] == [0,1] %}<div class="het gt "></div>{% elif var.gt[sample] == [1,1] %}<div class="hom_alt gt"></div>{% else %}<div class="alt_alt gt"></div>{% endif %}{% endfor %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+{% endblock %}

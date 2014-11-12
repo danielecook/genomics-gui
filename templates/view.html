@@ -1,0 +1,27 @@
+{% extends "index.html" %}
+{% block view %}
+
+
+
+<div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                {% for x in datasets[0].keys() %}
+                  <th>{{ x }}</th>
+                {% endfor %}
+                </tr>
+              </thead>
+              <tbody>
+                {% for data in datasets %}
+                <tr>
+                  {% for v in data %}
+                  <td>{{ data[v] }}</td>
+                {% endfor %}
+                {
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+
+{% endblock %}

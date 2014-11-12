@@ -1,0 +1,44 @@
+{% extends "index.html" %}
+{% block view %}
+
+<div class="table-responsive">
+<h2>Variant Sets</h2>
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                <th>Info</th>
+                <th>referenceName (contigs)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for var in variantSets %}
+                <tr>
+                  <td style="width:50%">
+                    <strong>ID:</strong> {{ var.id }}<br />
+                    {% for item in metadata_display %}
+                      {% if var[item] %}
+                      <strong>{{ item|capitalize() }}: </strong>
+                        {% if var[item]|length >= 40 %}
+                        <a class="tip" data-toggle="tooltip" data-placement="top" title="{{ var[item] }}">
+                        {{ var[item]|truncate(40,True) }}
+                        {% else %}
+                        {{ var[item] }}<br />
+                        {% endif %}
+                      {% endif %}
+                    {% endfor %}
+
+
+                  </td>
+                  <td style="width:50%">
+                  <ul class="list-group">
+                  {% for contig in var.referenceBounds %}
+                  <a href="{{ url_for('Variants', dataset_name=dataset_name,variant_set_id=var.id, ref=contig.referenceName) }}" class="list-group-item">{{ contig.referenceName }} <span class="badge">{{ contig.upperBound }}</span></a>
+                  {% endfor %}
+                  </ul>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+
+{% endblock %}
