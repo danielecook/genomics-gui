@@ -3,6 +3,7 @@
 
 <div class="table-responsive">
 <h2>Variant Sets</h2>
+{{ variantSets}}
             <table class="table table-striped">
               <thead>
                 <tr>
@@ -15,7 +16,7 @@
                 <tr>
                   <td style="width:50%">
                     <strong>ID:</strong> {{ var.id }}<br />
-                    {% for item in metadata_display %}
+                    {% for item in metadata_keys %}
                       {% if var[item] %}
                       <strong>{{ item|capitalize() }}: </strong>
                         {% if var[item]|length >= 40 %}

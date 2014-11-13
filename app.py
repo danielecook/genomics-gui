@@ -25,6 +25,8 @@ from oauth2client.client import flow_from_clientsecrets
 from oauth2client.file import Storage
 from oauth2client.tools import run
 
+from variables import metadata_keys
+
 def connect():
     FLOW = flow_from_clientsecrets('client_secrets.json',
                                  scope=['https://www.googleapis.com/auth/bigquery',
@@ -63,6 +65,7 @@ config = yaml.load(open("config.yaml",'r'))
 PROJECT_NUMBER = config["PROJECT_NUMBER"]
 
 
+
 def get_dataset_id_by_name(dataset_name):
     dataset_list = submit(genomics.datasets().list(projectNumber=PROJECT_NUMBER))["datasets"]
     dataset = [x for x in dataset_list if x["name"] == dataset_name]
@@ -70,6 +73,14 @@ def get_dataset_id_by_name(dataset_name):
         return dataset[0]["id"]
     else:
         return None
+
+def append_metadata(variantSet, metadata_keys = metadata_keys):
+        if "metadata" in variantSet:
+            for meta in variantSet["metadata"]:
+                for k,v in meta.items():
+                    if v in metadata_keys:
+                        variantSet[meta["key"]] = meta["value"]
+        return variantSet
 
 @app.route("/")
 def home():
@@ -91,14 +102,9 @@ def Dataset(dataset_name):
     variantSets = submit(genomics.variantsets().search(body={"datasetIds":[dataset_id]}))
     variantSets = variantSets["variantSets"]
     # Reorganize variant sets
-    metadata_display = ["fileformat", "fileDate", "source", "reference", "assembly" ]
-    for n,varset in enumerate(variantSets):
-        if "metadata" in varset:
-            for meta in varset["metadata"]:
-                for k,v in meta.items():
-                    if v in metadata_display:
-                        variantSets[n][meta["key"]] = meta["value"]
-                        
+    variantSets = [append_metadata(x) for x in variantSets]
+               
+    
     breadcrumbs = OrderedDict([("Project", url_for('Project')), (dataset_name, "active")])
     return render_template('dataset.html', **locals())
 
@@ -107,9 +113,13 @@ def Variants(dataset_name, variant_set_id, ref):
     dataset_id = get_dataset_id_by_name(dataset_name)
     if dataset_id is None:
         raise Exception("Multiple databases with the same name not supported yet.")
-    variantSets = submit(genomics.variantsets().search(body={"datasetIds":[dataset_id]}))
-    variantSets = variantSets["variantSets"]
+    variantSet = submit(genomics.variantsets().search(body={"datasetIds":[dataset_id]}))
+    variantSet = variantSet["variantSets"][0]
     variants = submit(genomics.variants().search(body={"referenceName":ref, "variantSetIds":[variant_set_id]}))
+
+
+    variantSet = append_metadata(variantSet, metadata_keys)
+
     # Reorganize Callsets
     if "variants" in variants:
         sample_set = set()
@@ -122,9 +132,17 @@ def Variants(dataset_name, variant_set_id, ref):
                 gt_map[0] = v["referenceBases"]
                 variants["variants"][k]["gt"][sample_name] = c["genotype"]
         sample_set = sorted(sample_set)
+
+
+    # If a source string is available, use to label the variantSet
+    if "source" in variantSet:
+        variant_set_name = variantSet["source"]
+    else:
+        variant_set_name = "variantSet"
+
     breadcrumbs = OrderedDict([("Project", url_for('Project')),
                         (dataset_name, url_for('Dataset', dataset_name=dataset_name)),
-                        ("variantSet","active"),
+                        (variant_set_name,"active"),
                         (ref, "active")])
     return render_template('variant.html', **locals())
 
