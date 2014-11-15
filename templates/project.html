@@ -28,7 +28,7 @@
                 </tr>
               </thead>
               <tbody>
-                {% for dataset in datasets %}
+                {% for dataset in datasets|sort(attribute='name') %}
                 <tr>
                   <td><input class="manage" type="checkbox" value="{{ dataset.id }}" /></td>
                   <td><a href="{{ url_for('Dataset', dataset_name=dataset.name) }}">{{ dataset.name }}</a></td>
@@ -45,7 +45,7 @@
                 <tr id="add_new">
                   <td></td>
                   <td>
-                    <input name="dataset_name" type="text" class="form-control" placeholder="Create New Dataset" />
+                    <input name="dataset_name" autocomplete="off" type="text" class="form-control" placeholder="Create New Dataset" />
                   </td>
                   <td></td>
                   <td>
@@ -96,29 +96,30 @@ String.prototype.format = function(placeholders) {
 // Delete Modal
 //
 
-$("#delete").click(function(){
+$("#delete").on('click', function(){
   // Get number selected
-  var checked_boxes = $('.manage:checkbox:checked').map(function() {
-    return this.value;
-  });
+  checked_boxes = $('.manage:checkbox:checked').map(function() { console.log(this); return this.value }).toArray();
   var delete_warning = "Do you really want to delete {n} dataset(s)?".format({n:checked_boxes.length});
   $(".modal-body").html(delete_warning);
 });
 
-$("#remove_dataset").submit(function(event) {
+$("#remove_dataset").on('submit', function(event) {
   event.preventDefault();
   checked_boxes = $('.manage:checkbox:checked').map(function() { console.log(this); return this.value }).toArray();
   var posting = $.post( "/_remove_dataset/", {"datasets" : JSON.stringify(checked_boxes) });
-  posting.done(function( data ) {
-      $('#deleteModal').modal('toggle')
-
+  posting.success(function( data ) {
+      $('#deleteModal').modal('toggle');
+      $('.manage:checkbox:checked').parents("tr").attr("class","danger").fadeOut(complete=function() { 
+        this.remove();
+      });
+      
     });
 });
 //
 // Add New Datasets
 //
 
-$( "#add_dataset" ).submit(function( event ) {
+$( "#add_dataset" ).on('submit', function( event ) {
   // Stop form from submitting normally
   event.preventDefault();
   // Get some values from elements on the page:
@@ -137,7 +138,7 @@ $( "#add_dataset" ).submit(function( event ) {
     } else {
       var isPublic = "<i class='glyphicon glyphicon-remove'></i>";
     }
-    var new_dataset = "<tr> \
+    var new_dataset = "<tr class='success'> \
                       <td><input class='manage' type='checkbox' value='{id}'> \
                       <td><a href='/Project/{name}/'>{name}</a></td> \
                       <td><a href='/Project/{name}/'>{id}</a></td> \
