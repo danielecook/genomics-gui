@@ -3,10 +3,10 @@
 
 {% block head %}
 
-
+<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 <link href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.0/css/bootstrap.min.css" rel="stylesheet" media="screen">
 <link rel="stylesheet" href="{{url_for('.static', filename='style.css')}}" type="text/css">
-
+<script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.0/js/bootstrap.min.js"></script>
 {% endblock %}
 
 {% block navbar %}
@@ -56,7 +56,7 @@
           {% endfor %}
           </ol>
 
-          <h2 class="sub-header">Section title</h2>
+          <h2 class="sub-header">{{ section_title }}</h2>
           {% block view %}{% endblock %}
           </div>
         </div>
@@ -68,8 +68,6 @@
 
 {% block scripts %}
 
-<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-<script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.0/js/bootstrap.min.js"></script>
 
 <script type="text/javascript">
 $(document).ready(function() {

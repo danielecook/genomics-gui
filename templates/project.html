@@ -1,9 +1,27 @@
 {% extends "index.html" %}
 {% block view %}
+                
 <div class="table-responsive">
-            <table class="table table-striped">
+
+
+<form id="add_dataset" action="/_add_dataset/" method="POST" class="form-inline">
+            
+            <table id="datasets" class="table table-striped">
               <thead>
                 <tr>
+                  <th>
+                    <div class="dropdown">
+                      <button class="btn btn-xs dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-expanded="true">
+                        Manage
+                        <span class="caret"></span>
+                      </button>
+                      <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1">
+                        <li role="presentation"><a id="delete" role="menuitem" tabindex="-1"  data-toggle="modal" data-target="#deleteModal">Delete</a></li>
+                        <li role="presentation"><a role="menuitem" tabindex="-1" href="#">Make Public</a></li>
+                        <li role="presentation"><a role="menuitem" tabindex="-1" href="#">Make Private</a></li>
+                      </ul>
+                    </div>
+                  </th>
                   <th>Name</th>
                   <th>id</th>
                   <th>Public</th>
@@ -12,6 +30,7 @@
               <tbody>
                 {% for dataset in datasets %}
                 <tr>
+                  <td><input class="manage" type="checkbox" value="{{ dataset.id }}" /></td>
                   <td><a href="{{ url_for('Dataset', dataset_name=dataset.name) }}">{{ dataset.name }}</a></td>
                   <td><a href="{{ url_for('Dataset', dataset_name=dataset.name) }}">{{ dataset.id }}</a></td>
                   <td>{% if dataset.isPublic == True %}
@@ -22,7 +41,114 @@
                   </td>
                 </tr>
                 {% endfor %}
+
+                <tr id="add_new">
+                  <td></td>
+                  <td>
+                    <input name="dataset_name" type="text" class="form-control" placeholder="Create New Dataset" />
+                  </td>
+                  <td></td>
+                  <td>
+                    <label><input name="isPublic" type="checkbox" value="" /> Public</label>
+                  </td>
+                  
+                  </tr>
+                  
               </tbody>
             </table>
+</form>
+
+
+<div class="modal fade" id="deleteModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+        <h4 class="modal-title">Delete Datasets</h4>
+      </div>
+      <div class="modal-body">
+        <p></p>
+      </div>
+      <div class="modal-footer">
+      <form id="remove_dataset" action="/_remove_dataset/" method="POST" class="form-inline">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        <button id="delete_items" type="submit" class="btn btn-danger">Delete</button>
+        </form>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+
+
+<script>
+
+String.prototype.format = function(placeholders) {
+    var s = this;
+    for(var propertyName in placeholders) {
+        var re = new RegExp('{' + propertyName + '}', 'gm');
+        s = s.replace(re, placeholders[propertyName]);
+    }    
+    return s;
+};
+
+//
+// Delete Modal
+//
+
+$("#delete").click(function(){
+  // Get number selected
+  var checked_boxes = $('.manage:checkbox:checked').map(function() {
+    return this.value;
+  });
+  var delete_warning = "Do you really want to delete {n} dataset(s)?".format({n:checked_boxes.length});
+  $(".modal-body").html(delete_warning);
+});
+
+$("#remove_dataset").submit(function(event) {
+  event.preventDefault();
+  checked_boxes = $('.manage:checkbox:checked').map(function() { console.log(this); return this.value }).toArray();
+  var posting = $.post( "/_remove_dataset/", {"datasets" : JSON.stringify(checked_boxes) });
+  posting.done(function( data ) {
+      $('#deleteModal').modal('toggle')
+
+    });
+});
+//
+// Add New Datasets
+//
+
+$( "#add_dataset" ).submit(function( event ) {
+  // Stop form from submitting normally
+  event.preventDefault();
+  // Get some values from elements on the page:
+  var $form = $( this ),
+    dataset_name = $form.find( "input[name='dataset_name']" ).val(),
+    isPublic = $form.find( "input[name='isPublic']").prop('checked')
+    url = "/_add_dataset/";
+  // Send the data using post
+  var posting = $.post( url, { "dataset_name": dataset_name, "isPublic": isPublic } );
+  console.log(isPublic);
+  // Put the results in a div
+  posting.done(function( data ) {
+    console.log(data);
+    if (data["isPublic"] == true) {
+      var isPublic = "<i class='glyphicon glyphicon-ok'></i>";
+    } else {
+      var isPublic = "<i class='glyphicon glyphicon-remove'></i>";
+    }
+    var new_dataset = "<tr> \
+                      <td><input class='manage' type='checkbox' value='{id}'> \
+                      <td><a href='/Project/{name}/'>{name}</a></td> \
+                      <td><a href='/Project/{name}/'>{id}</a></td> \
+                      <td>{isPublic}</td> \
+                    </tr>".format({name:data["name"], id:data["id"],isPublic:isPublic});
+    $('#add_new').before(new_dataset);
+    // Clear Form
+    $form.find( "input[name='dataset_name']" ).val("");
+    $form.find( "input[name='isPublic']").attr('checked', false);
+  });
+});
+</script>
 
 {% endblock %}

@@ -1,11 +1,11 @@
-from flask import Flask, render_template, url_for
+from flask import Flask, render_template, url_for, request, jsonify
 from flask_bootstrap import Bootstrap
 from jinja2 import Template, environmentfilter
 import os, sys
 
 import yaml
 import json
-from tabulate import tabulate
+from json import loads
 import os
 from yaml import load, dump
 from pprint import pprint as pp
@@ -26,6 +26,7 @@ from oauth2client.file import Storage
 from oauth2client.tools import run
 
 from variables import metadata_keys
+from pprint import pprint as pp
 
 def connect():
     FLOW = flow_from_clientsecrets('client_secrets.json',
@@ -91,8 +92,32 @@ def home():
 @app.route("/Project/")
 def Project():
     datasets = submit(genomics.datasets().list(projectNumber=PROJECT_NUMBER))["datasets"]
+    section_title = "Datasets"
     breadcrumbs = OrderedDict([("Project", "active")])
     return render_template('project.html', **locals())
+
+@app.route('/_add_dataset/', methods = ['POST'])
+def add_dataset():
+    try:
+        if request.form['isPublic'] == "true":
+            isPublic = True
+        else:
+            isPublic = False
+        proj_num = submit(genomics.datasets().create(body={"isPublic":isPublic, 
+                                           "name":request.form['dataset_name'],
+                                           "projectNumber":PROJECT_NUMBER}))
+        return jsonify(proj_num)
+    except:
+        return "ERROR"
+
+@app.route('/_remove_dataset/', methods = ['POST'])
+def remove_dataset():
+    for i in loads(request.form["datasets"]):
+        proj_num = submit(genomics.datasets().delete(datasetId=i))
+    return jsonify(proj_num)
+
+
+
 
 @app.route("/Project/<dataset_name>/")
 def Dataset(dataset_name):
@@ -103,8 +128,6 @@ def Dataset(dataset_name):
     variantSets = variantSets["variantSets"]
     # Reorganize variant sets
     variantSets = [append_metadata(x) for x in variantSets]
-               
-    
     breadcrumbs = OrderedDict([("Project", url_for('Project')), (dataset_name, "active")])
     return render_template('dataset.html', **locals())
 
