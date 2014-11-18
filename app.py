@@ -2,6 +2,7 @@ from flask import Flask, render_template, url_for, request, jsonify
 from flask_bootstrap import Bootstrap
 from jinja2 import Template, environmentfilter
 import os, sys
+import time, datetime
 
 import yaml
 import json
@@ -48,6 +49,7 @@ def connect():
     genomics = build('genomics', 'v1beta2', http=http)
     return bq, storage, genomics
 
+
 def submit(action):
   try:
     return action.execute()
@@ -65,6 +67,15 @@ bq, storage, genomics = connect()
 config = yaml.load(open("config.yaml",'r'))
 PROJECT_NUMBER = config["PROJECT_NUMBER"]
 
+
+
+@app.template_filter('fixtime')
+def _jinja2_filter_datetime(timestamp, fmt=None):
+    return datetime.datetime.fromtimestamp(float(timestamp)/1000).strftime("%Y-%m-%d %H:%M:%S")
+
+@app.template_filter('cleanText')
+def _jinja2_filter_datetime(text):
+    return text.replace("_", " " ).title()
 
 
 def get_dataset_id_by_name(dataset_name):
@@ -89,12 +100,17 @@ def home():
     datasets = submit(genomics.datasets().list(projectNumber=PROJECT_NUMBER))["datasets"]
     return render_template('view.html', **locals())
 
-@app.route("/Project/")
+#==========#
+# Datasets #
+#==========#
+
+@app.route("/Datasets/")
 def Project():
     datasets = submit(genomics.datasets().list(projectNumber=PROJECT_NUMBER))["datasets"]
     section_title = "Datasets"
-    breadcrumbs = OrderedDict([("Project", "active")])
-    return render_template('project.html', **locals())
+    breadcrumbs = OrderedDict([("Datasets", "active")])
+    return render_template('Datasets.html', **locals())
+
 
 @app.route('/_add_dataset/', methods = ['POST'])
 def add_dataset():
@@ -116,10 +132,20 @@ def remove_dataset():
         proj_num = submit(genomics.datasets().delete(datasetId=i))
     return jsonify(proj_num)
 
+#======#
+# Jobs #
+#======#
+
+@app.route("/Jobs/")
+def jobs():
+    PROJECT_NUMBER = config["PROJECT_NUMBER"]
+    joblist = submit(genomics.jobs().search(body={"projectNumber":PROJECT_NUMBER}))
+    joblist = joblist["jobs"]
+    breadcrumbs = OrderedDict([("Jobs", "active")])
+    return render_template("Jobs.html", **locals())
 
 
-
-@app.route("/Project/<dataset_name>/")
+@app.route("/Datasets/<dataset_name>/")
 def Dataset(dataset_name):
     dataset_id = get_dataset_id_by_name(dataset_name)
     if dataset_id is None:
@@ -128,10 +154,10 @@ def Dataset(dataset_name):
     variantSets = variantSets["variantSets"]
     # Reorganize variant sets
     variantSets = [append_metadata(x) for x in variantSets]
-    breadcrumbs = OrderedDict([("Project", url_for('Project')), (dataset_name, "active")])
+    breadcrumbs = OrderedDict([("Datasets", url_for('Project')), (dataset_name, "active")])
     return render_template('dataset.html', **locals())
 
-@app.route("/Project/<dataset_name>/<variant_set_id>/<ref>/")
+@app.route("/Datasets/<dataset_name>/<variant_set_id>/<ref>/")
 def Variants(dataset_name, variant_set_id, ref):
     dataset_id = get_dataset_id_by_name(dataset_name)
     if dataset_id is None:
@@ -163,7 +189,7 @@ def Variants(dataset_name, variant_set_id, ref):
     else:
         variant_set_name = "variantSet"
 
-    breadcrumbs = OrderedDict([("Project", url_for('Project')),
+    breadcrumbs = OrderedDict([("Datasets", url_for('Project')),
                         (dataset_name, url_for('Dataset', dataset_name=dataset_name)),
                         (variant_set_name,"active"),
                         (ref, "active")])

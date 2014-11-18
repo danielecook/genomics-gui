@@ -1,0 +1,35 @@
+{% extends "index.html" %}
+{% block view %}
+
+<div class="table-responsive">
+{{ PROJECT_NUMBER }}
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                <th>Status</th>
+                <th>Type</th>
+                <th>Created</th>
+                
+                </tr>
+              </thead>
+              <tbody>
+                {% for job in joblist %}
+                <tr>
+                  {% if job.status == "SUCCESS" %}
+                    {% set label='label-success' %}
+                  {% elif job.status == "PENDING" %}
+                    {% set label='label-default' %}
+                  {% else %}
+                    {% set label='label-danger' %}
+                  {% endif %}
+                <td><span class="label {{label}}">{{ job.status }}</span></td>
+                <td>{{ job.request["type"]|cleanText }}</td>
+                <td>{{ job.created|fixtime }}</td>
+                <td>{{ job }}</td>
+                </tr>
+                {% endfor %}
+                
+              </tbody>
+            </table>
+
+{% endblock %}
