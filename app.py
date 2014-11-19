@@ -43,7 +43,6 @@ def connect():
 
     http = httplib2.Http()
     http = credentials.authorize(http)
-
     bq = build('bigquery', 'v2', http=http)
     storage = build('storage','v1',http=http)
     genomics = build('genomics', 'v1beta2', http=http)
@@ -66,7 +65,6 @@ Bootstrap(app)
 bq, storage, genomics = connect()
 config = yaml.load(open("config.yaml",'r'))
 PROJECT_NUMBER = config["PROJECT_NUMBER"]
-
 
 
 @app.template_filter('fixtime')
@@ -128,9 +126,30 @@ def add_dataset():
 
 @app.route('/_remove_dataset/', methods = ['POST'])
 def remove_dataset():
+    dataset_success = []
+    dataset_failure = []
     for i in loads(request.form["datasets"]):
-        proj_num = submit(genomics.datasets().delete(datasetId=i))
-    return jsonify(proj_num)
+        if submit(genomics.datasets().delete(datasetId=i)) == "":
+            dataset_success.append(i)
+        else:
+            dataset_failure.append(i)
+    return jsonify(success=dataset_success, failure=dataset_failure)
+
+@app.route('/_make_public/', methods = ['POST'])
+def make_public():
+    dataset_nums = []
+    for i in loads(request.form["datasets"]):
+        return_val = submit(genomics.datasets().patch(body={"isPublic":True}, datasetId=i))
+        dataset_nums.append(return_val)
+    return jsonify(response=dataset_nums)
+
+@app.route('/_make_private/', methods = ['POST'])
+def make_private():
+    dataset_nums = []
+    for i in loads(request.form["datasets"]):
+        return_val = submit(genomics.datasets().patch(body={"isPublic":False}, datasetId=i))
+        dataset_nums.append(return_val)
+    return jsonify(response=dataset_nums)
 
 #======#
 # Jobs #

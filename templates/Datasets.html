@@ -15,10 +15,10 @@
                         Manage
                         <span class="caret"></span>
                       </button>
-                      <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1">
-                        <li role="presentation"><a id="delete" role="menuitem" tabindex="-1"  data-toggle="modal" data-target="#deleteModal">Delete</a></li>
-                        <li role="presentation"><a role="menuitem" tabindex="-1" href="#">Make Public</a></li>
-                        <li role="presentation"><a role="menuitem" tabindex="-1" href="#">Make Private</a></li>
+                      <ul class="dropdown-menu manage" role="menu" aria-labelledby="dropdownMenu1">
+                        <li role="presentation" class='disabled'><a id="delete" role="menuitem" tabindex="-1"  data-toggle="modal" data-target="#deleteModal">Delete</a></li>
+                        <li role="presentation" class='disabled'><a id="makePublic" role="menuitem" tabindex="-1" href="#">Make Public</a></li>
+                        <li role="presentation" class='disabled'><a id="makePrivate" role="menuitem" tabindex="-1" href="#">Make Private</a></li>
                       </ul>
                     </div>
                   </th>
@@ -93,12 +93,28 @@ String.prototype.format = function(placeholders) {
 };
 
 //
+// dropdown
+//
+
+$(document).on("change", function() {
+  checked_boxes = $('.manage[type=checkbox]:checked').map(function() { return this.value }).toArray();
+  if (checked_boxes.length == 0) {
+    $(".manage").children("li").addClass("disabled");
+  } else {
+    $(".manage").children("li").removeClass("disabled");
+  }
+});
+
+//
 // Delete Modal
 //
 
-$("#delete").on('click', function(){
+$(document).on('click', '#delete', function(){
   // Get number selected
   checked_boxes = $('.manage:checkbox:checked').map(function() { console.log(this); return this.value }).toArray();
+  if (checked_boxes.length == 0) {
+    return false;
+  }
   var delete_warning = "Do you really want to delete {n} dataset(s)?".format({n:checked_boxes.length});
   $(".modal-body").html(delete_warning);
 });
@@ -109,10 +125,20 @@ $("#remove_dataset").on('submit', function(event) {
   var posting = $.post( "/_remove_dataset/", {"datasets" : JSON.stringify(checked_boxes) });
   posting.success(function( data ) {
       $('#deleteModal').modal('toggle');
-      $('.manage:checkbox:checked').parents("tr").attr("class","danger").fadeOut(complete=function() { 
-        this.remove();
+      console.log(data);
+      data["success"].map( function(i) {
+        $("[value='" + i + "']").parents("tr").attr("class","danger").fadeOut(complete=function() { 
+          this.remove();
+        });
       });
-      
+      data["failure"].map( function(i) {
+
+      $(document).trigger("add-alerts", {
+        message: "<strong>Error</strong> Dataset {i} was not deleted.".format({i:i}),
+        priority: "error"
+      });
+      });
+
     });
 });
 //
@@ -127,17 +153,25 @@ $( "#add_dataset" ).on('submit', function( event ) {
     dataset_name = $form.find( "input[name='dataset_name']" ).val(),
     isPublic = $form.find( "input[name='isPublic']").prop('checked')
     url = "/_add_dataset/";
+  if (dataset_name == "") {
+    return false;
+  }
   // Send the data using post
   var posting = $.post( url, { "dataset_name": dataset_name, "isPublic": isPublic } );
-  console.log(isPublic);
   // Put the results in a div
   posting.done(function( data ) {
-    console.log(data);
     if (data["isPublic"] == true) {
       var isPublic = "<i class='glyphicon glyphicon-ok'></i>";
     } else {
       var isPublic = "<i class='glyphicon glyphicon-remove'></i>";
     }
+    if (data == "ERROR") {
+      $(document).trigger("add-alerts", {
+        message: "<strong>Error</strong> Something went wrong.",
+        priority: "error"
+      });
+      return false;
+    } else {
     var new_dataset = "<tr class='success'> \
                       <td><input class='manage' type='checkbox' value='{id}'> \
                       <td><a href='/Datasets/{name}/'>{name}</a></td> \
@@ -145,11 +179,59 @@ $( "#add_dataset" ).on('submit', function( event ) {
                       <td>{isPublic}</td> \
                     </tr>".format({name:data["name"], id:data["id"],isPublic:isPublic});
     $('#add_new').before(new_dataset);
+    }
     // Clear Form
     $form.find( "input[name='dataset_name']" ).val("");
     $form.find( "input[name='isPublic']").attr('checked', false);
   });
 });
+
+//
+// Make Public
+//
+
+$( "#makePublic" ).on('click', function( event ) {
+  checked_boxes = $('.manage:checkbox:checked').map(function() { console.log(this); return this.value }).toArray();
+  url = "/_make_public/";
+  if (checked_boxes.length == 0) {
+    return false;
+  }
+  var posting = $.post( url, {"datasets" : JSON.stringify(checked_boxes) } );
+  posting.done(function( data ) {
+    data["response"].map( function(i) {
+      $("[value='" + i["id"] + "']").parent().siblings().last().children("i").removeClass("glyphicon-remove").addClass("glyphicon-ok");
+
+      $(document).trigger("add-alerts", {
+        message: "<strong>Success</strong> Dataset {i} was made public.".format({i:i["id"]}),
+        priority: "success"
+      });
+
+    });
+  })
+});
+
+$( "#makePrivate" ).on('click', function( event ) {
+  checked_boxes = $('.manage:checkbox:checked').map(function() { console.log(this); return this.value }).toArray();
+  url = "/_make_private/";
+  if (checked_boxes.length == 0) {
+    return false;
+  }
+  var posting = $.post( url, {"datasets" : JSON.stringify(checked_boxes) } );
+  posting.done(function( data ) {
+    console.log(data["response"]);
+    var data = data;
+    data["response"].map( function(i) {
+      $("[value='" + i["id"] + "']").parent().siblings().last().children("i").removeClass("glyphicon-ok").addClass("glyphicon-remove");
+
+      $(document).trigger("add-alerts", {
+        message: "<strong>Success</strong> Dataset {i} was made private.".format({i:i["id"]}),
+        priority: "success"
+      });
+
+    });
+  })
+});
+
 </script>
 
 {% endblock %}

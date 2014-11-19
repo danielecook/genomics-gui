@@ -7,6 +7,7 @@
 <link href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.0/css/bootstrap.min.css" rel="stylesheet" media="screen">
 <link rel="stylesheet" href="{{url_for('.static', filename='style.css')}}" type="text/css">
 <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.0/js/bootstrap.min.js"></script>
+<script src="/static/bsalert.js"></script>
 {% endblock %}
 
 {% block navbar %}
@@ -46,7 +47,7 @@
             <li><a href="/Jobs/">Jobs</a></li>
         </div>
         <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
-          
+          <div data-alerts="alerts" data-titles="{&quot;warning&quot;: &quot;<em>Warning!</em>&quot;}" data-ids="myid" data-fade="6000"></div>
           <ol class="breadcrumb">
           {% for k, v in breadcrumbs.items() %}
           {% if v == "active" %}
@@ -65,17 +66,15 @@
     </div>
 
 
-{% endblock %}
-
-{% block scripts %}
-
 
 <script type="text/javascript">
 $(document).ready(function() {
     $("body").tooltip({ selector: '[data-toggle=tooltip]' });
 });
-</script>
 
+</script>
 {% endblock %}
+
+{% block scripts %}{% endblock %}
 
 
